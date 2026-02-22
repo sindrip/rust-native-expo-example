@@ -1,0 +1,17 @@
+[package]
+name = "app-mobile"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+crate-type = ["cdylib", "staticlib", "lib"]
+
+[dependencies]
+app-core.workspace = true
+parking_lot.workspace = true
+uniffi = { workspace = true, features = ["tokio"] }
+tokio = { workspace = true }
+
+[lints]
+workspace = true
