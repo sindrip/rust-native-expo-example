@@ -1,6 +1,6 @@
-import { NativeModule, requireNativeModule } from 'expo';
+import { NativeModule, requireNativeModule } from "expo";
 
-import { ExpoAppMobileModuleEvents } from './ExpoAppMobile.types';
+import { ExpoAppMobileModuleEvents } from "./ExpoAppMobile.types";
 
 declare class ExpoAppMobileModule extends NativeModule<ExpoAppMobileModuleEvents> {
   add(left: number, right: number): number;
@@ -13,4 +13,4 @@ declare class ExpoAppMobileModule extends NativeModule<ExpoAppMobileModuleEvents
 }
 
 // This call loads the native module object from the JSI.
-export default requireNativeModule<ExpoAppMobileModule>('ExpoAppMobile');
+export default requireNativeModule<ExpoAppMobileModule>("ExpoAppMobile");

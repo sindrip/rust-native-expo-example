@@ -1,2 +1,2 @@
-export { default } from './ExpoAppMobileModule';
-export * from './ExpoAppMobile.types';
+export { default } from "./ExpoAppMobileModule";
+export * from "./ExpoAppMobile.types";

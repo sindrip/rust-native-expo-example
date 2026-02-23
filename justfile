@@ -10,5 +10,9 @@ verify:
     cargo fmt --check
     cargo nextest run --workspace
 
+verify-js:
+    npm --workspaces run lint
+    CI=true npm --workspaces run test
+
 generate-bindings:
     cargo xtask generate-bindings

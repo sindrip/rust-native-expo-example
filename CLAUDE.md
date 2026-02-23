@@ -23,6 +23,6 @@ After making Rust code changes run `just verify`, which runs in order:
 4. `cargo nextest run`
 
 ### JavaScript / TypeScript
-After making JS/TS code changes, verify manually in the relevant package directory:
-1. `npm run lint`
-2. `npm run test`
+After making JS/TS code changes run from the project root:
+1. `npm --workspaces run lint`
+2. `npm --workspaces run test`
