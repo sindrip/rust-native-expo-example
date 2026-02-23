@@ -67,3 +67,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm --workspaces run test
+
+  bindings:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - run: rustup target add aarch64-apple-ios aarch64-apple-ios-sim
+      - run: cargo xtask generate-bindings
