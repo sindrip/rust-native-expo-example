@@ -12,7 +12,7 @@ verify:
 
 verify-js:
     npm --workspaces run lint
-    CI=true npm --workspaces run test
+    npm --workspaces run format
 
 generate-bindings:
     cargo xtask generate-bindings

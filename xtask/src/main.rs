@@ -3,7 +3,7 @@ use std::process::Command;
 use anyhow::{Context, Result, bail};
 use clap::{Parser, Subcommand};
 
-const PKG: &str = "packages/expo-app-mobile";
+const PKG: &str = "packages/app-mobile";
 const LIB: &str = "libapp_mobile";
 
 #[derive(Parser)]
@@ -69,8 +69,11 @@ fn generate_bindings() -> Result<()> {
         ],
     )?;
 
+    // Clean old artifacts
+    let swift_out = format!("{PKG}/ios/uniffi");
+    let _ = std::fs::remove_dir_all(&swift_out);
+
     // Generate Swift bindings from iOS simulator library
-    let swift_out = format!("{PKG}/ios");
     run(
         "cargo",
         &[
@@ -85,10 +88,6 @@ fn generate_bindings() -> Result<()> {
         ],
     )?;
 
-    // Clean old artifacts
-    let _ = std::fs::remove_file(format!("{PKG}/ios/{LIB}.a"));
-    let _ = std::fs::remove_dir_all(format!("{PKG}/ios/AppMobile.xcframework"));
-
     // Create xcframework combining device and simulator libraries
     run(
         "xcodebuild",
@@ -99,7 +98,7 @@ fn generate_bindings() -> Result<()> {
             "-library",
             &ios_sim,
             "-output",
-            &format!("{PKG}/ios/AppMobile.xcframework"),
+            &format!("{PKG}/ios/uniffi/AppMobile.xcframework"),
         ],
     )?;
 

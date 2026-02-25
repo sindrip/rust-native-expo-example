@@ -8,8 +8,7 @@ debug/
 target/
 
 ### Generated bindings ###
-packages/expo-app-mobile/ios/AppMobile.xcframework
-packages/expo-app-mobile/ios/app_mobile.swift
-packages/expo-app-mobile/ios/app_mobileFFI.h
-packages/expo-app-mobile/ios/app_mobileFFI.modulemap
-packages/expo-app-mobile/android/src/main/java/uniffi/
+packages/app-mobile/ios/uniffi/
+packages/app-mobile/android/src/main/java/uniffi/
+
+.vscode
