@@ -75,3 +75,33 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: rustup target add aarch64-apple-ios aarch64-apple-ios-sim
       - run: cargo xtask generate-bindings
+
+  build-ios:
+    needs: bindings
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: rustup target add aarch64-apple-ios aarch64-apple-ios-sim
+      - run: cargo xtask generate-bindings
+      - name: Prebuild
+        working-directory: packages/app-mobile/example
+        run: npx expo prebuild --clean
+      - name: Build iOS simulator app
+        working-directory: packages/app-mobile/example
+        run: xcodebuild -workspace ios/appmobileexample.xcworkspace -scheme appmobileexample -configuration Release -sdk iphonesimulator -derivedDataPath build
+      - name: Package .app
+        working-directory: packages/app-mobile/example
+        run: |
+          mkdir -p artifact
+          cp -r build/Build/Products/Release-iphonesimulator/appmobileexample.app artifact/
+          cd artifact && zip -r appmobileexample.zip appmobileexample.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appmobileexample-ios-simulator
+          path: packages/app-mobile/example/artifact/appmobileexample.zip
