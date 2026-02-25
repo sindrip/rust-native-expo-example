@@ -69,7 +69,7 @@ jobs:
       - run: npm --workspaces run format
 
   bindings:
-    runs-on: macos-latest
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
@@ -77,8 +77,7 @@ jobs:
       - run: cargo xtask generate-bindings
 
   build-ios:
-    needs: bindings
-    runs-on: macos-latest
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
@@ -94,12 +93,12 @@ jobs:
         run: npx expo prebuild --clean
       - name: Build iOS simulator app
         working-directory: packages/app-mobile/example
-        run: xcodebuild -workspace ios/appmobileexample.xcworkspace -scheme appmobileexample -configuration Release -sdk iphonesimulator -derivedDataPath build
+        run: xcodebuild -workspace ios/appmobileexample.xcworkspace -scheme appmobileexample -configuration Debug -sdk iphonesimulator -arch arm64 -derivedDataPath build
       - name: Package .app
         working-directory: packages/app-mobile/example
         run: |
           mkdir -p artifact
-          cp -r build/Build/Products/Release-iphonesimulator/appmobileexample.app artifact/
+          cp -r build/Build/Products/Debug-iphonesimulator/appmobileexample.app artifact/
           cd artifact && zip -r appmobileexample.zip appmobileexample.app
       - uses: actions/upload-artifact@v4
         with:
