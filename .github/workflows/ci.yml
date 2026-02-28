@@ -75,19 +75,25 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: rustup target add aarch64-apple-ios aarch64-apple-ios-sim
       - run: cargo xtask generate-bindings
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-bindings
+          path: packages/app-mobile/ios/uniffi/
 
   build-ios:
     runs-on: macos-26
+    needs: bindings
     steps:
       - uses: actions/checkout@v4
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions/download-artifact@v4
+        with:
+          name: ios-bindings
+          path: packages/app-mobile/ios/uniffi/
       - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
           cache: npm
       - run: npm ci
-      - run: rustup target add aarch64-apple-ios aarch64-apple-ios-sim
-      - run: cargo xtask generate-bindings
       - name: Cache CocoaPods
         uses: actions/cache@v4
         with:
