@@ -88,17 +88,46 @@ jobs:
       - run: npm ci
       - run: rustup target add aarch64-apple-ios aarch64-apple-ios-sim
       - run: cargo xtask generate-bindings
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/CocoaPods
+            ~/.cocoapods
+          key: pods-${{ runner.os }}-${{ github.ref_name }}
+          restore-keys: |
+            pods-${{ runner.os }}-main
+            pods-${{ runner.os }}-
+      - name: Cache iOS build
+        uses: actions/cache@v4
+        with:
+          path: packages/app-mobile/example/ios
+          key: ios-${{ runner.os }}-${{ github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            ios-${{ runner.os }}-${{ github.ref_name }}-
+            ios-${{ runner.os }}-main-
+            ios-${{ runner.os }}-
       - name: Prebuild
         working-directory: packages/app-mobile/example
-        run: npx expo prebuild --clean
+        run: npx expo prebuild -p ios
       - name: Build iOS simulator app
         working-directory: packages/app-mobile/example
-        run: xcodebuild -workspace ios/appmobileexample.xcworkspace -scheme appmobileexample -configuration Debug -sdk iphonesimulator -arch arm64 -derivedDataPath build
+        run: |
+          xcodebuild \
+            -workspace ios/appmobileexample.xcworkspace \
+            -scheme appmobileexample \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -arch arm64 \
+            -derivedDataPath ios/build \
+            -parallelizeTargets \
+            -quiet \
+            CODE_SIGNING_ALLOWED=NO
       - name: Package .app
         working-directory: packages/app-mobile/example
         run: |
           mkdir -p artifact
-          cp -r build/Build/Products/Debug-iphonesimulator/appmobileexample.app artifact/
+          cp -r ios/build/Build/Products/Release-iphonesimulator/appmobileexample.app artifact/
           cd artifact && zip -r appmobileexample.zip appmobileexample.app
       - uses: actions/upload-artifact@v4
         with:
