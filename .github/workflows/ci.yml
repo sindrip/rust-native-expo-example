@@ -175,6 +175,8 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
       - name: Prebuild
         working-directory: packages/app-mobile/example
         run: npx expo prebuild -p android
