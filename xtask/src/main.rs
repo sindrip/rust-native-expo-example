@@ -29,6 +29,8 @@ enum Commands {
     GenerateBindings,
     /// Build iOS libraries and create xcframework (requires macOS)
     BuildIos,
+    /// Build Android shared libraries via cargo-ndk
+    BuildAndroid,
 }
 
 fn main() -> Result<()> {
@@ -37,6 +39,7 @@ fn main() -> Result<()> {
     match cli.command {
         Commands::GenerateBindings => generate_bindings(),
         Commands::BuildIos => build_ios(),
+        Commands::BuildAndroid => build_android(),
     }
 }
 
@@ -100,6 +103,22 @@ fn build_ios() -> Result<()> {
         .arg(&ios_sim)
         .arg("-output")
         .arg(&xcframework))?;
+
+    Ok(())
+}
+
+fn build_android() -> Result<()> {
+    let jni_libs = ROOT.join(format!("{PKG}/android/src/main/jniLibs"));
+    let _ = std::fs::remove_dir_all(&jni_libs);
+
+    run(Command::new("cargo")
+        .arg("ndk")
+        .args(["--output-dir", &jni_libs.to_string_lossy()])
+        .args(["--target", "aarch64-linux-android"])
+        .args(["--target", "armv7-linux-androideabi"])
+        .args(["--target", "x86_64-linux-android"])
+        .args(["--target", "i686-linux-android"])
+        .args(["build", "--package", "app-mobile"]))?;
 
     Ok(())
 }

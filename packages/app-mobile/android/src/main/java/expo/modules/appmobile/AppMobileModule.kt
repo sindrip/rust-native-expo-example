@@ -1,5 +1,6 @@
 package expo.modules.appmobile
 
+import expo.modules.kotlin.functions.Coroutine
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import uniffi.app_mobile.BackgroundTaskCallback
@@ -33,7 +34,7 @@ class AppMobileModule : Module() {
       divide(left.toULong(), right.toULong())?.toLong()
     }
 
-    AsyncFunction("delayedAdd") { left: Long, right: Long, delayMs: Long ->
+    AsyncFunction("delayedAdd") Coroutine { left: Long, right: Long, delayMs: Long ->
       delayedAdd(left.toULong(), right.toULong(), delayMs.toULong()).toLong()
     }
 
