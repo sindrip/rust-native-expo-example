@@ -1,7 +1,17 @@
+use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::LazyLock;
 
 use anyhow::{Context, Result, bail};
 use clap::{Parser, Subcommand};
+
+static ROOT: LazyLock<PathBuf> = LazyLock::new(|| {
+    #[allow(clippy::expect_used)]
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .expect("xtask must be in a subdirectory of the workspace root")
+        .to_path_buf()
+});
 
 const PKG: &str = "packages/app-mobile";
 const LIB: &str = "libapp_mobile";
@@ -15,8 +25,10 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Generate Swift and Kotlin bindings for app-mobile
+    /// Generate Swift and Kotlin bindings from the host library (works on Linux)
     GenerateBindings,
+    /// Build iOS libraries and create xcframework (requires macOS)
+    BuildIos,
 }
 
 fn main() -> Result<()> {
@@ -24,95 +36,81 @@ fn main() -> Result<()> {
 
     match cli.command {
         Commands::GenerateBindings => generate_bindings(),
+        Commands::BuildIos => build_ios(),
     }
 }
 
 fn generate_bindings() -> Result<()> {
-    let ios_device = format!("target/aarch64-apple-ios/debug/{LIB}.a");
-    let ios_sim = format!("target/aarch64-apple-ios-sim/debug/{LIB}.a");
+    let host_lib = ROOT.join(format!("target/debug/{LIB}"));
 
-    // Build for host (dylib for Kotlin binding generation)
-    run("cargo", &["build", "-p", "app-mobile"])?;
+    // Build for host (staticlib for Swift, dylib for Kotlin)
+    run(Command::new("cargo")
+        .arg("build")
+        .arg("-p")
+        .arg("app-mobile"))?;
 
-    // Build for iOS device
-    run(
-        "cargo",
-        &["build", "-p", "app-mobile", "--target", "aarch64-apple-ios"],
-    )?;
-
-    // Build for iOS simulator
-    run(
-        "cargo",
-        &[
-            "build",
-            "-p",
-            "app-mobile",
-            "--target",
-            "aarch64-apple-ios-sim",
-        ],
-    )?;
+    // Generate Swift bindings from host staticlib
+    let swift_out = ROOT.join(format!("{PKG}/ios/uniffi"));
+    let _ = std::fs::remove_dir_all(&swift_out);
+    run(Command::new("cargo")
+        .arg("uniffi-bindgen-swift")
+        .arg(host_lib.with_extension("a"))
+        .arg(&swift_out)
+        .arg("--swift-sources")
+        .arg("--headers"))?;
 
     // Generate Kotlin bindings from host dylib
-    let kotlin_out = format!("{PKG}/android/src/main/java");
-    run(
-        "cargo",
-        &[
-            "uniffi-bindgen",
-            "generate",
-            "--library",
-            &format!("target/debug/{LIB}.dylib"),
-            "--language",
-            "kotlin",
-            "--out-dir",
-            &kotlin_out,
-            "--no-format",
-        ],
-    )?;
-
-    // Clean old artifacts
-    let swift_out = format!("{PKG}/ios/uniffi");
-    let _ = std::fs::remove_dir_all(&swift_out);
-
-    // Generate Swift bindings from iOS simulator library
-    run(
-        "cargo",
-        &[
-            "uniffi-bindgen",
-            "generate",
-            "--library",
-            &ios_sim,
-            "--language",
-            "swift",
-            "--out-dir",
-            &swift_out,
-        ],
-    )?;
-
-    // Create xcframework combining device and simulator libraries
-    run(
-        "xcodebuild",
-        &[
-            "-create-xcframework",
-            "-library",
-            &ios_device,
-            "-library",
-            &ios_sim,
-            "-output",
-            &format!("{PKG}/ios/uniffi/AppMobile.xcframework"),
-        ],
-    )?;
+    let kotlin_out = ROOT.join(format!("{PKG}/android/src/main/java"));
+    run(Command::new("cargo")
+        .arg("uniffi-bindgen")
+        .arg("generate")
+        .arg("--library")
+        .arg(host_lib.with_extension(std::env::consts::DLL_EXTENSION))
+        .arg("--language")
+        .arg("kotlin")
+        .arg("--out-dir")
+        .arg(&kotlin_out)
+        .arg("--no-format"))?;
 
     Ok(())
 }
 
-fn run(cmd: &str, args: &[&str]) -> Result<()> {
-    let status = Command::new(cmd)
-        .args(args)
+fn build_ios() -> Result<()> {
+    let ios_device = ROOT.join(format!("target/aarch64-apple-ios/debug/{LIB}.a"));
+    let ios_sim = ROOT.join(format!("target/aarch64-apple-ios-sim/debug/{LIB}.a"));
+
+    // Build for iOS device and simulator
+    run(Command::new("cargo")
+        .arg("build")
+        .arg("-p")
+        .arg("app-mobile")
+        .arg("--target")
+        .arg("aarch64-apple-ios")
+        .arg("--target")
+        .arg("aarch64-apple-ios-sim"))?;
+
+    // Create xcframework combining device and simulator libraries
+    let xcframework = ROOT.join(format!("{PKG}/ios/AppMobile.xcframework"));
+    let _ = std::fs::remove_dir_all(&xcframework);
+    run(Command::new("xcodebuild")
+        .arg("-create-xcframework")
+        .arg("-library")
+        .arg(&ios_device)
+        .arg("-library")
+        .arg(&ios_sim)
+        .arg("-output")
+        .arg(&xcframework))?;
+
+    Ok(())
+}
+
+fn run(cmd: &mut Command) -> Result<()> {
+    let status = cmd
         .status()
-        .with_context(|| format!("failed to execute: {cmd} {}", args.join(" ")))?;
+        .with_context(|| format!("failed to execute: {cmd:?}"))?;
 
     if !status.success() {
-        bail!("{cmd} {} exited with {status}", args.join(" "));
+        bail!("{cmd:?} exited with {status}");
     }
 
     Ok(())

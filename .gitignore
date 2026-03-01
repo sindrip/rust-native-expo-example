@@ -9,6 +9,7 @@ target/
 
 ### Generated bindings ###
 packages/app-mobile/ios/uniffi/
+packages/app-mobile/ios/AppMobile.xcframework/
 packages/app-mobile/android/src/main/java/uniffi/
 
 .vscode

@@ -25,6 +25,9 @@ Pod::Spec.new do |s|
     'DEFINES_MODULE' => 'YES',
   }
 
-  s.source_files = "**/*.{h,m,mm,swift,hpp,cpp}"
-  s.vendored_frameworks = "uniffi/AppMobile.xcframework"
+  s.source_files = [
+    "*.swift",
+    "uniffi/**/*.{swift,h}"
+  ]
+  s.vendored_frameworks = "AppMobile.xcframework"
 end

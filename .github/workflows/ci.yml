@@ -69,11 +69,10 @@ jobs:
       - run: npm --workspaces run format
 
   bindings:
-    runs-on: macos-26
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
-      - run: rustup target add aarch64-apple-ios aarch64-apple-ios-sim
       - run: cargo xtask generate-bindings
       - uses: actions/upload-artifact@v4
         with:
@@ -85,10 +84,13 @@ jobs:
     needs: bindings
     steps:
       - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - run: rustup target add aarch64-apple-ios aarch64-apple-ios-sim
       - uses: actions/download-artifact@v4
         with:
           name: ios-bindings
           path: packages/app-mobile/ios/uniffi/
+      - run: cargo xtask build-ios
       - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
@@ -104,15 +106,13 @@ jobs:
           restore-keys: |
             pods-${{ runner.os }}-main
             pods-${{ runner.os }}-
-      - name: Cache iOS build
+      - name: Cache iOS prebuild
         uses: actions/cache@v4
         with:
           path: packages/app-mobile/example/ios
-          key: ios-${{ runner.os }}-${{ github.ref_name }}-${{ github.sha }}
+          key: prebuild-ios-${{ runner.os }}-${{ hashFiles('packages/app-mobile/ios/AppMobile.podspec', 'packages/app-mobile/example/app.json', 'packages/app-mobile/example/package.json') }}-${{ github.sha }}
           restore-keys: |
-            ios-${{ runner.os }}-${{ github.ref_name }}-
-            ios-${{ runner.os }}-main-
-            ios-${{ runner.os }}-
+            prebuild-ios-${{ runner.os }}-${{ hashFiles('packages/app-mobile/ios/AppMobile.podspec', 'packages/app-mobile/example/app.json', 'packages/app-mobile/example/package.json') }}-
       - name: Prebuild
         working-directory: packages/app-mobile/example
         run: npx expo prebuild -p ios
