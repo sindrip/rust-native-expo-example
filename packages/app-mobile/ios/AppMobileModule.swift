@@ -33,17 +33,21 @@ public class AppMobileModule: Module {
     Function("stopBackgroundTask") {
       stopBackgroundTask()
     }
+
+    OnDestroy {
+      stopBackgroundTask()
+    }
   }
 }
 
-class AppMobileBackgroundCallback: BackgroundTaskCallback {
-  private weak var module: AppMobileModule?
+final class AppMobileBackgroundCallback: BackgroundTaskCallback {
+  nonisolated(unsafe) private let module: AppMobileModule
 
   init(module: AppMobileModule) {
     self.module = module
   }
 
   func onTick(count: UInt64) {
-    module?.sendEvent("onTick", ["count": Int(count)])
+    module.sendEvent("onTick", ["count": Int(count)])
   }
 }

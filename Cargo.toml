@@ -6,6 +6,7 @@ members = [
     "crates/app-mobile",
     "crates/app-web",
     "tools/uniffi-bindgen",
+    "tools/uniffi-bindgen-swift",
     "xtask",
 ]
 default-members = [

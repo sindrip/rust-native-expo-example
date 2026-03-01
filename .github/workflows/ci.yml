@@ -69,9 +69,121 @@ jobs:
       - run: npm --workspaces run format
 
   bindings:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo xtask generate-bindings
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-bindings
+          path: packages/app-mobile/ios/uniffi/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-bindings
+          path: packages/app-mobile/android/src/main/java/uniffi/
+
+  build-ios:
+    if: false
+    runs-on: macos-26
+    needs: bindings
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
       - run: rustup target add aarch64-apple-ios aarch64-apple-ios-sim
-      - run: cargo xtask generate-bindings
+      - uses: actions/download-artifact@v4
+        with:
+          name: ios-bindings
+          path: packages/app-mobile/ios/uniffi/
+      - run: cargo xtask build-ios
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/CocoaPods
+            ~/.cocoapods
+          key: pods-${{ runner.os }}-${{ github.ref_name }}
+          restore-keys: |
+            pods-${{ runner.os }}-main
+            pods-${{ runner.os }}-
+      - name: Cache iOS prebuild
+        uses: actions/cache@v4
+        with:
+          path: packages/app-mobile/example/ios
+          key: prebuild-ios-${{ runner.os }}-${{ hashFiles('packages/app-mobile/ios/AppMobile.podspec', 'packages/app-mobile/example/app.json', 'packages/app-mobile/example/package.json') }}-${{ github.sha }}
+          restore-keys: |
+            prebuild-ios-${{ runner.os }}-${{ hashFiles('packages/app-mobile/ios/AppMobile.podspec', 'packages/app-mobile/example/app.json', 'packages/app-mobile/example/package.json') }}-
+      - name: Prebuild
+        working-directory: packages/app-mobile/example
+        run: npx expo prebuild -p ios
+      - name: Build iOS simulator app
+        working-directory: packages/app-mobile/example
+        run: |
+          xcodebuild \
+            -workspace ios/appmobileexample.xcworkspace \
+            -scheme appmobileexample \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -arch arm64 \
+            -derivedDataPath ios/build \
+            -parallelizeTargets \
+            -quiet \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Package .app
+        working-directory: packages/app-mobile/example
+        run: |
+          mkdir -p artifact
+          cp -r ios/build/Build/Products/Release-iphonesimulator/appmobileexample.app artifact/
+          cd artifact && zip -r appmobileexample.zip appmobileexample.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appmobileexample-ios-simulator
+          path: packages/app-mobile/example/artifact/appmobileexample.zip
+
+  build-android:
+    runs-on: ubuntu-latest
+    needs: bindings
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-ndk
+      - run: >-
+          rustup target add
+          aarch64-linux-android
+          armv7-linux-androideabi
+          x86_64-linux-android
+          i686-linux-android
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-bindings
+          path: packages/app-mobile/android/src/main/java/uniffi/
+      - run: cargo xtask build-android
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+      - name: Prebuild
+        working-directory: packages/app-mobile/example
+        run: npx expo prebuild -p android
+      - name: Build Android APK
+        working-directory: packages/app-mobile/example/android
+        run: ./gradlew assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appmobileexample-android
+          path: packages/app-mobile/example/android/app/build/outputs/apk/debug/app-debug.apk
