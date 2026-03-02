@@ -55,3 +55,9 @@ yarn-error.log
 
 # Expo
 .expo/*
+
+# Generated native artifacts
+ios/uniffi/
+ios/AppMobile.xcframework/
+android/src/main/java/uniffi/
+android/src/main/jniLibs/

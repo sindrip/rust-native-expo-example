@@ -3,4 +3,5 @@ idiomatic_version_file_enable_tools = ["rust", "node"]
 
 [tools]
 "cargo:cargo-nextest" = "latest"
+"cargo:cargo-ndk" = "latest"
 just = "latest"

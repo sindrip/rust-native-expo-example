@@ -1,4 +1,4 @@
 [alias]
-xtask = "run -p xtask --bin xtask --"
-uniffi-bindgen = "run -p uniffi-bindgen --"
-uniffi-bindgen-swift = "run -p uniffi-bindgen-swift --"
+xtask = "run --package xtask --bin xtask --"
+uniffi-bindgen = "run --package uniffi-bindgen --"
+uniffi-bindgen-swift = "run --package uniffi-bindgen-swift --"
