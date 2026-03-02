@@ -1,6 +1,6 @@
 {
-  "name": "app-mobile",
-  "version": "0.1.0",
+  "name": "@sindrip/app-mobile",
+  "version": "0.0.0",
   "description": "My new module",
   "main": "build/index.js",
   "types": "build/index.d.ts",
@@ -24,7 +24,15 @@
     "app-mobile",
     "AppMobile"
   ],
-  "repository": "https://github.com/sindrip/rust-native-expo-example",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sindrip/rust-native-expo-example.git",
+    "directory": "packages/app-mobile"
+  },
   "bugs": {
     "url": "https://github.com/sindrip/rust-native-expo-example/issues"
   },

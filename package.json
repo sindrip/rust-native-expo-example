@@ -3,7 +3,13 @@
   "workspaces": [
     "packages/*"
   ],
+  "scripts": {
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "changeset publish"
+  },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.4"
+    "@biomejs/biome": "^2.4.4",
+    "@changesets/cli": "^2.29.8"
   }
 }
