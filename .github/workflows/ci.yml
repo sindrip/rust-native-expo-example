@@ -84,13 +84,15 @@ jobs:
           path: packages/app-mobile/android/src/main/java/uniffi/
 
   build-ios:
-    if: false
     runs-on: macos-26
     needs: bindings
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
-      - run: rustup target add aarch64-apple-ios aarch64-apple-ios-sim
+      - run: >-
+          rustup target add 
+          aarch64-apple-ios 
+          aarch64-apple-ios-sim
       - uses: actions/download-artifact@v4
         with:
           name: ios-bindings
@@ -101,23 +103,11 @@ jobs:
           node-version-file: .node-version
           cache: npm
       - run: npm ci
-      - name: Cache CocoaPods
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/Library/Caches/CocoaPods
-            ~/.cocoapods
-          key: pods-${{ runner.os }}-${{ github.ref_name }}
-          restore-keys: |
-            pods-${{ runner.os }}-main
-            pods-${{ runner.os }}-
       - name: Cache iOS prebuild
         uses: actions/cache@v4
         with:
           path: packages/app-mobile/example/ios
-          key: prebuild-ios-${{ runner.os }}-${{ hashFiles('packages/app-mobile/ios/AppMobile.podspec', 'packages/app-mobile/example/app.json', 'packages/app-mobile/example/package.json') }}-${{ github.sha }}
-          restore-keys: |
-            prebuild-ios-${{ runner.os }}-${{ hashFiles('packages/app-mobile/ios/AppMobile.podspec', 'packages/app-mobile/example/app.json', 'packages/app-mobile/example/package.json') }}-
+          key: ios-prebuild-${{ runner.os }}-${{ hashFiles('packages/app-mobile/example/app.json', 'packages/app-mobile/example/package.json') }}
       - name: Prebuild
         working-directory: packages/app-mobile/example
         run: npx expo prebuild -p ios
@@ -175,8 +165,6 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: gradle/actions/setup-gradle@v4
-        with:
-          cache-read-only: false
       - name: Prebuild
         working-directory: packages/app-mobile/example
         run: npx expo prebuild -p android
