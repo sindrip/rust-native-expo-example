@@ -28,17 +28,9 @@ enum Commands {
     /// Generate Swift and Kotlin bindings from the host library (works on Linux)
     GenerateBindings,
     /// Build iOS libraries and create xcframework (requires macOS)
-    BuildIos {
-        /// Build in release mode
-        #[arg(long)]
-        release: bool,
-    },
+    BuildIos,
     /// Build Android shared libraries via cargo-ndk
-    BuildAndroid {
-        /// Build in release mode
-        #[arg(long)]
-        release: bool,
-    },
+    BuildAndroid,
 }
 
 fn main() -> Result<()> {
@@ -46,8 +38,8 @@ fn main() -> Result<()> {
 
     match cli.command {
         Commands::GenerateBindings => generate_bindings(),
-        Commands::BuildIos { release } => build_ios(release),
-        Commands::BuildAndroid { release } => build_android(release),
+        Commands::BuildIos => build_ios(),
+        Commands::BuildAndroid => build_android(),
     }
 }
 
@@ -86,24 +78,19 @@ fn generate_bindings() -> Result<()> {
     Ok(())
 }
 
-fn build_ios(release: bool) -> Result<()> {
-    let profile = if release { "release" } else { "debug" };
-    let ios_device = ROOT.join(format!("target/aarch64-apple-ios/{profile}/{LIB}.a"));
-    let ios_sim = ROOT.join(format!("target/aarch64-apple-ios-sim/{profile}/{LIB}.a"));
+fn build_ios() -> Result<()> {
+    let ios_device = ROOT.join(format!("target/aarch64-apple-ios/mobile-release/{LIB}.a"));
+    let ios_sim = ROOT.join(format!(
+        "target/aarch64-apple-ios-sim/mobile-release/{LIB}.a"
+    ));
 
     // Build for iOS device and simulator
-    let mut cmd = Command::new("cargo");
-    cmd.arg("build")
-        .arg("-p")
-        .arg("app-mobile")
-        .arg("--target")
-        .arg("aarch64-apple-ios")
-        .arg("--target")
-        .arg("aarch64-apple-ios-sim");
-    if release {
-        cmd.arg("--release");
-    }
-    run(&mut cmd)?;
+    run(Command::new("cargo")
+        .arg("build")
+        .args(["--package", "app-mobile"])
+        .args(["--target", "aarch64-apple-ios"])
+        .args(["--target", "aarch64-apple-ios-sim"])
+        .args(["--profile", "mobile-release"]))?;
 
     // Create xcframework combining device and simulator libraries
     let xcframework = ROOT.join(format!("{PKG}/ios/AppMobile.xcframework"));
@@ -120,22 +107,20 @@ fn build_ios(release: bool) -> Result<()> {
     Ok(())
 }
 
-fn build_android(release: bool) -> Result<()> {
+fn build_android() -> Result<()> {
     let jni_libs = ROOT.join(format!("{PKG}/android/src/main/jniLibs"));
     let _ = std::fs::remove_dir_all(&jni_libs);
 
-    let mut cmd = Command::new("cargo");
-    cmd.arg("ndk")
+    run(Command::new("cargo")
+        .arg("ndk")
         .args(["--output-dir", &jni_libs.to_string_lossy()])
         .args(["--target", "aarch64-linux-android"])
         .args(["--target", "armv7-linux-androideabi"])
         .args(["--target", "x86_64-linux-android"])
         .args(["--target", "i686-linux-android"])
-        .args(["build", "--package", "app-mobile"]);
-    if release {
-        cmd.arg("--release");
-    }
-    run(&mut cmd)?;
+        .arg("build")
+        .args(["--package", "app-mobile"])
+        .args(["--profile", "mobile-release"]))?;
 
     Ok(())
 }

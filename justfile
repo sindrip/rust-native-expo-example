@@ -18,5 +18,8 @@ verify-js:
 generate-bindings:
     cargo xtask generate-bindings
 
+build-ios:
+    cargo xtask build-ios
+
 build-android:
     cargo xtask build-android

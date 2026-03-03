@@ -13,7 +13,7 @@
     "format:fix": "biome format --write src/",
     "test": "expo-module test",
     "prepare": "expo-module prepare",
-    "prepublishOnly": "cargo xtask generate-bindings && cargo xtask build-ios --release && cargo xtask build-android --release && expo-module prepublishOnly",
+    "prepublishOnly": "cargo xtask generate-bindings && cargo xtask build-ios && cargo xtask build-android && expo-module prepublishOnly",
     "expo-module": "expo-module",
     "open:ios": "xed example/ios",
     "open:android": "open -a \"Android Studio\" example/android"
